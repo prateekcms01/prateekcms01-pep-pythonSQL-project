@@ -12,7 +12,7 @@ def main():
 
     # users table
     cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                        userId INTEGER PRIMARY KEY,
+                        userId INTEGER PRIMARY KEY ,
                         firstName TEXT,
                         lastName TEXT
                       )'''
@@ -48,29 +48,74 @@ def main():
 
 # This function will load the users.csv file into the users table, discarding any records with incomplete data
 def load_and_clean_users(file_path):
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+        next(reader) 
+        for row in reader:  
+            if len(row) == 2:
+                first_name = row[0].strip()
+                last_name = row[1].strip()
+                
+                if first_name!="" and last_name!="":
+                    cursor.execute('''INSERT INTO users (firstName, lastName) 
+                                  VALUES (?, ?)''', 
+                               (first_name, last_name))
 
-    print("TODO: load_users")
-
+    conn.commit()
 
 # This function will load the callLogs.csv file into the callLogs table, discarding any records with incomplete data
 def load_and_clean_call_logs(file_path):
+    with open(file_path,'r') as file:
+        reader=csv.reader(file)
+        next(reader)
+        for row in reader:
+            if len(row)==5:
+                phone_number=row[0].strip()
+                start_time=row[1].strip()
+                end_time=row[2].strip()
+                direction=row[3].strip()
+                user_id=row[4].strip()
+                if (phone_number!="" and start_time!="" and end_time!="" and direction!="" and user_id!=""):
+                    cursor.execute('''INSERT INTO callLogs (phoneNumber,startTime,endTime,direction,userId)
+                                    values (?,?,?,?,?) ''', 
+                                    (phone_number,start_time,end_time,direction,user_id))
 
-    print("TODO: load_call_logs")
+    conn.commit()
 
 
 # This function will write analytics data to testUserAnalytics.csv - average call time, and number of calls per user.
 # You must save records consisting of each userId, avgDuration, and numCalls
 # example: 1,105.0,4 - where 1 is the userId, 105.0 is the avgDuration, and 4 is the numCalls.
 def write_user_analytics(csv_file_path):
-
-    print("TODO: write_user_analytics")
+    cursor.execute('''
+        SELECT userId, 
+               AVG(endTime - startTime) AS avgDuration, 
+               COUNT(*) AS numCalls
+        FROM callLogs
+        GROUP BY userId
+    ''')
+    results = cursor.fetchall()
+    with open(csv_file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['userId', 'avgDuration', 'numCalls'])
+        for row in results:
+            user_id, avg_duration, num_calls = row
+            writer.writerow([user_id, avg_duration, num_calls])
 
 
 # This function will write the callLogs ordered by userId, then start time.
 # Then, write the ordered callLogs to orderedCalls.csv
 def write_ordered_calls(csv_file_path):
-
-    print("TODO: write_ordered_calls")
+    cursor.execute('''
+        SELECT * FROM callLogs
+        ORDER BY userId, startTime
+    ''')
+    results = cursor.fetchall()
+    with open(csv_file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['callId', 'phoneNumber', 'startTime', 'endTime', 'direction', 'userId']) 
+        for row in results:
+            writer.writerow(row)
 
 
 
